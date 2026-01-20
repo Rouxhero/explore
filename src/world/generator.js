@@ -71,7 +71,7 @@ class ChunkGenerator {
         this.smoothChunk(tiles, chunkSeed);
 
         // Ensure pathways through the chunk for connectivity
-        this.ensureConnectivity(tiles, chunkSize);
+        this.ensureConnectivity(tiles, chunkSize, chunkSeed);
 
         return tiles;
     }
@@ -122,7 +122,7 @@ class ChunkGenerator {
      * This creates more natural-looking cave structures
      * 
      * @param {Array<Array<Object>>} tiles - Tile array
-     * @param {number} chunkSeed - Seed for consistency
+     * @param {number} chunkSeed - Seed for any randomization in this method
      */
     smoothChunk(tiles, chunkSeed) {
         const size = tiles.length;
@@ -179,8 +179,9 @@ class ChunkGenerator {
      * 
      * @param {Array<Array<Object>>} tiles - Tile array
      * @param {number} chunkSize - Chunk size
+     * @param {number} chunkSeed - Seed for deterministic path generation
      */
-    ensureConnectivity(tiles, chunkSize) {
+    ensureConnectivity(tiles, chunkSize, chunkSeed) {
         // Horizontal path through middle
         const midY = Math.floor(chunkSize / 2);
         for (let x = 0; x < chunkSize; x++) {
@@ -201,12 +202,14 @@ class ChunkGenerator {
         // Add some extra paths for variety
         const offset = Math.floor(chunkSize / 4);
         
-        // Secondary horizontal paths
+        // Secondary horizontal paths - use deterministic random
         for (let x = 0; x < chunkSize; x++) {
-            if (tiles[offset][x].type === 'wall' && Math.random() < 0.3) {
+            const seed1 = chunkSeed + x * 12345 + offset * 67890;
+            if (tiles[offset][x].type === 'wall' && this.seededRandom(seed1) < 0.3) {
                 tiles[offset][x] = { type: 'floor', walkable: true };
             }
-            if (tiles[chunkSize - offset - 1][x].type === 'wall' && Math.random() < 0.3) {
+            const seed2 = chunkSeed + x * 12345 + (chunkSize - offset - 1) * 67890;
+            if (tiles[chunkSize - offset - 1][x].type === 'wall' && this.seededRandom(seed2) < 0.3) {
                 tiles[chunkSize - offset - 1][x] = { type: 'floor', walkable: true };
             }
         }
