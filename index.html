@@ -16,9 +16,21 @@
             <div>Seed: <span id="seed">12345</span></div>
         </div>
     </div>
-    <script src="tileset.js"></script>
-    <script src="world.js"></script>
-    <script src="player.js"></script>
-    <script src="game.js"></script>
+    <!-- Engine systems -->
+    <script src="src/engine/input.js"></script>
+    <script src="src/engine/camera.js"></script>
+    <script src="src/engine/render.js"></script>
+    <script src="src/engine/loop.js"></script>
+    
+    <!-- World systems -->
+    <script src="src/world/tileset.js"></script>
+    <script src="src/world/generator.js"></script>
+    <script src="src/world/chunk.js"></script>
+    
+    <!-- Entities -->
+    <script src="src/entities/player.js"></script>
+    
+    <!-- Main game -->
+    <script src="main.js"></script>
 </body>
 </html>
