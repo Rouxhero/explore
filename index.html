@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Dungeon</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="info">
+            <div>Controls: WASD or Arrow Keys to move</div>
+            <div>Position: <span id="position">0, 0</span></div>
+            <div>Chunk: <span id="chunk">0, 0</span></div>
+            <div>Seed: <span id="seed">12345</span></div>
+        </div>
+    </div>
+    <script src="tileset.js"></script>
+    <script src="world.js"></script>
+    <script src="player.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
