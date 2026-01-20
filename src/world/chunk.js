@@ -129,6 +129,17 @@ class ChunkManager {
         // Fallback for out-of-bounds
         return { type: 'wall', walkable: false };
     }
+    
+    // Convenience accessors for layered tiles
+    getGroundTypeAt(worldX, worldY) {
+        const t = this.getTileAt(worldX, worldY);
+        return t ? (t.ground || t.type) : null;
+    }
+    
+    getDecorTypeAt(worldX, worldY) {
+        const t = this.getTileAt(worldX, worldY);
+        return t ? t.decor : null;
+    }
 
     /**
      * Get all chunks visible in the camera viewport

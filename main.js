@@ -125,7 +125,7 @@ class Game {
                     continue;
                 }
 
-                // Render tile
+                // Render tile with ground and decoration layers
                 this.renderTile(tile, screenPos.x, screenPos.y);
             }
         }
@@ -143,9 +143,21 @@ class Game {
      * @param {number} screenX - Screen X position
      * @param {number} screenY - Screen Y position
      */
-    renderTile(tile, screenX, screenY) {
-        const tileCanvas = this.tileset.getTile(tile.type);
-        this.renderer.drawTile(tileCanvas, screenX, screenY);
+    renderTile(tile, x, y) {
+        // Ground layer
+        const groundType = tile.ground || tile.type;
+        const groundSprite = this.tileset.getTile(groundType);
+        if (groundSprite) {
+            this.renderer.drawTile(groundSprite, x, y);
+        }
+
+        // Decoration layer
+        if (tile.decor) {
+            const decorSprite = this.tileset.getTile(tile.decor);
+            if (decorSprite) {
+                this.renderer.drawTile(decorSprite, x, y);
+            }
+        }
     }
 
     /**

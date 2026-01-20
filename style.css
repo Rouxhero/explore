@@ -13,6 +13,7 @@ body {
     align-items: center;
     min-height: 100vh;
     overflow: hidden;
+    touch-action: none; /* Prevent browser gestures interfering */
 }
 
 #game-container {
@@ -45,4 +46,42 @@ body {
 #info span {
     color: #4af;
     font-weight: bold;
+}
+
+/* Mobile joystick overlay */
+#joystick {
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    width: 140px;
+    height: 140px;
+    user-select: none;
+    touch-action: none;
+    z-index: 1000;
+}
+
+#joystick-base {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+#joystick-stick {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(100, 160, 255, 0.30);
+    border: 2px solid rgba(100, 160, 255, 0.6);
+    box-shadow: 0 0 12px rgba(100, 160, 255, 0.5);
+    left: 40px; /* centered in 140px base by default */
+    top: 40px;
+}
+
+/* Hide joystick on desktop by default */
+@media (hover: hover) and (pointer: fine) {
+    #joystick { display: none; }
 }

@@ -4,42 +4,51 @@
  * Extracts individual tiles for rendering
  */
 class Tileset {
-    constructor(imagePath, tileSize = 16) {
+    constructor(imagePath, tileSize = 16, tileMapPath = '../tilemap.json') {
         this.imagePath = imagePath;
         this.tileSize = tileSize;
+        this.tileMapPath = tileMapPath;
         this.image = null;
         this.loaded = false;
-        
-        // Tile mapping: tile type -> {x, y} position in spritesheet
-        // These coordinates are in tile units (will be multiplied by tileSize)
-        this.tileMap = {
-            // Floor tiles - various stone floors
-            'floor': { x: 1, y: 0 },
-            'floor2': { x: 2, y: 0 },
-            'floor3': { x: 3, y: 0 },
-            
-            // Wall tiles
-            'wall': { x: 0, y: 1 },
-            'wall_top': { x: 1, y: 1 },
-            'wall_side': { x: 2, y: 1 },
-            
-            // Door tiles
-            'door': { x: 5, y: 2 },
-            'door_open': { x: 6, y: 2 },
-            
-            // Special tiles
-            'chest': { x: 7, y: 3 },
-            'stairs': { x: 8, y: 3 },
-            'stairs_down': { x: 9, y: 3 },
-            
-            // Player - using a character sprite
-            'player': { x: 0, y: 5 }
-        };
+        this.tileMap = {};
         
         // Canvas cache for pre-extracted tiles
         this.tileCache = {};
         
-        this.loadImage();
+        this.loadTileMap();
+    }
+
+    /**
+     * Load the tilemap from external JSON file
+     */
+    async loadTileMap() {
+        try {
+            const response = await fetch(this.tileMapPath);
+            const tileMapData = await response.json();
+            
+            // Store margins if they exist in tilemap
+            this.margins = tileMapData._margins || { x: 0, y: 0 };
+            console.log('Tilemap margins:', this.margins);
+            // Extract tile definitions (skip _margins key)
+            this.tileMap = {};
+            for (const [key, value] of Object.entries(tileMapData)) {
+                if (key !== '_margins') {
+                    this.tileMap[key] = value;
+                }
+            }
+            
+            this.loadImage();
+        } catch (error) {
+            console.error('Failed to load tilemap:', error);
+            // Fallback to default tilemap
+            this.tileMap = {
+                'floor': { x: 3, y: 3 },
+                'wall': { x: 3, y: 3 },
+                'player': { x: 5, y: 5 }
+            };
+            this.margins = { x: 0, y: 0 };
+            this.loadImage();
+        }
     }
 
     /**
@@ -67,6 +76,9 @@ class Tileset {
      * This pre-renders tiles to individual canvases for fast blitting
      */
     extractTiles() {
+        const marginX = this.margins.x || 0;
+        const marginY = this.margins.y || 0;
+        
         for (const [tileName, position] of Object.entries(this.tileMap)) {
             const canvas = document.createElement('canvas');
             canvas.width = this.tileSize;
@@ -79,17 +91,21 @@ class Tileset {
             ctx.mozImageSmoothingEnabled = false;
             ctx.msImageSmoothingEnabled = false;
             
+            // Calculate source position accounting for margins
+            const sourceX = position.x * (this.tileSize + marginX);
+            const sourceY = position.y * (this.tileSize + marginY);
+            
             // Extract tile from spritesheet
             ctx.drawImage(
                 this.image,
-                position.x * this.tileSize,  // Source X
-                position.y * this.tileSize,  // Source Y
-                this.tileSize,               // Source width
-                this.tileSize,               // Source height
-                0,                           // Dest X
-                0,                           // Dest Y
-                this.tileSize,               // Dest width
-                this.tileSize                // Dest height
+                sourceX,                // Source X
+                sourceY,                // Source Y
+                this.tileSize,          // Source width
+                this.tileSize,          // Source height
+                0,                      // Dest X
+                0,                      // Dest Y
+                this.tileSize,          // Dest width
+                this.tileSize           // Dest height
             );
             
             this.tileCache[tileName] = canvas;
@@ -194,17 +210,16 @@ class Tileset {
     }
 
     /**
-     * Get source coordinates for a tile type from spritesheet
-     * Used for direct sprite rendering
-     * 
+     * Get sprite coordinates in the spritesheet, accounting for margins
      * @param {string} type - Tile type
-     * @returns {{x: number, y: number}} Sprite coordinates
+     * @returns {{x: number, y: number}} Source coordinates
      */
     getSpriteCoords(type) {
+        const margins = this.margins || { x: 0, y: 0 };
         const coords = this.tileMap[type] || this.tileMap.floor;
         return {
-            x: coords.x * this.tileSize,
-            y: coords.y * this.tileSize
+            x: coords.x * (this.tileSize + margins.x),
+            y: coords.y * (this.tileSize + margins.y)
         };
     }
 

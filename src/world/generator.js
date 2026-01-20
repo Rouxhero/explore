@@ -73,6 +73,9 @@ class ChunkGenerator {
         // Ensure pathways through the chunk for connectivity
         this.ensureConnectivity(tiles, chunkSize, chunkSeed);
 
+        // Determine wall variations based on neighbors (operates on ground layer)
+        this.determineWallVariations(tiles, chunkSize);
+
         return tiles;
     }
 
@@ -86,34 +89,39 @@ class ChunkGenerator {
      * @returns {Object} Tile data
      */
     generateTile(rand, x, y, chunkSize) {
-        let tileType = 'floor';
-        
+        // Layered tile: ground + optional decoration
+        let ground = 'floor';
+        let decor = null;
+
         // Edges have higher chance of walls for room-like structure
         const isEdge = x === 0 || x === chunkSize - 1 || 
                        y === 0 || y === chunkSize - 1;
-        
+
         if (isEdge && rand < 0.7) {
-            tileType = 'wall';
+            ground = 'wall';
         }
         // Interior walls for dungeon feel
         else if (!isEdge && rand < 0.4) {
-            tileType = 'wall';
+            ground = 'wall';
         }
-        // Doors in walls
-        else if (rand > 0.88 && rand < 0.90) {
-            tileType = 'door';
+
+        // Decorative elements placed on floor tiles only
+        if (ground !== 'wall') {
+            if (rand > 0.88 && rand < 0.90) {
+                decor = 'door';
+            } else if (rand > 0.98) {
+                decor = 'chest';
+            } else if (rand > 0.96 && rand < 0.97) {
+                decor = 'stairs';
+            }
         }
-        // Decorative elements
-        else if (rand > 0.98) {
-            tileType = 'chest';
-        }
-        else if (rand > 0.96 && rand < 0.97) {
-            tileType = 'stairs';
-        }
-        
+
         return {
-            type: tileType,
-            walkable: tileType !== 'wall'
+            // Maintain backward compatibility
+            type: ground,
+            ground,
+            decor,
+            walkable: ground !== 'wall' && !['door_closed'].includes(decor)
         };
     }
 
@@ -133,12 +141,12 @@ class ChunkGenerator {
         for (let iter = 0; iter < iterations; iter++) {
             for (let y = 1; y < size - 1; y++) {
                 for (let x = 1; x < size - 1; x++) {
-                    // Count wall neighbors
+                    // Count wall neighbors (ground layer only)
                     let wallCount = 0;
                     for (let dy = -1; dy <= 1; dy++) {
                         for (let dx = -1; dx <= 1; dx++) {
                             if (dx === 0 && dy === 0) continue;
-                            if (tiles[y + dy][x + dx].type === 'wall') {
+                            if (tiles[y + dy][x + dx].ground === 'wall') {
                                 wallCount++;
                             }
                         }
@@ -148,16 +156,14 @@ class ChunkGenerator {
                     // If 3 or fewer neighbors are walls, become floor
                     // This smooths out random noise into organic shapes
                     if (wallCount >= 5) {
-                        newTiles[y][x] = { type: 'wall', walkable: false };
+                        newTiles[y][x].ground = 'wall';
+                        newTiles[y][x].type = 'wall';
+                        newTiles[y][x].walkable = false;
                     } else if (wallCount <= 3) {
-                        // Keep special tiles
-                        if (tiles[y][x].type === 'door' || 
-                            tiles[y][x].type === 'chest' ||
-                            tiles[y][x].type === 'stairs') {
-                            newTiles[y][x] = tiles[y][x];
-                        } else {
-                            newTiles[y][x] = { type: 'floor', walkable: true };
-                        }
+                        // Become floor, keep existing decor
+                        newTiles[y][x].ground = 'floor';
+                        newTiles[y][x].type = 'floor';
+                        newTiles[y][x].walkable = true;
                     }
                 }
             }
@@ -186,16 +192,20 @@ class ChunkGenerator {
         const midY = Math.floor(chunkSize / 2);
         for (let x = 0; x < chunkSize; x++) {
             // Only clear walls, preserve decorative tiles
-            if (tiles[midY][x].type === 'wall') {
-                tiles[midY][x] = { type: 'floor', walkable: true };
+            if (tiles[midY][x].ground === 'wall') {
+                tiles[midY][x].ground = 'floor';
+                tiles[midY][x].type = 'floor';
+                tiles[midY][x].walkable = true;
             }
         }
 
         // Vertical path through middle
         const midX = Math.floor(chunkSize / 2);
         for (let y = 0; y < chunkSize; y++) {
-            if (tiles[y][midX].type === 'wall') {
-                tiles[y][midX] = { type: 'floor', walkable: true };
+            if (tiles[y][midX].ground === 'wall') {
+                tiles[y][midX].ground = 'floor';
+                tiles[y][midX].type = 'floor';
+                tiles[y][midX].walkable = true;
             }
         }
 
@@ -205,12 +215,68 @@ class ChunkGenerator {
         // Secondary horizontal paths - use deterministic random
         for (let x = 0; x < chunkSize; x++) {
             const seed1 = chunkSeed + x * 12345 + offset * 67890;
-            if (tiles[offset][x].type === 'wall' && this.seededRandom(seed1) < 0.3) {
-                tiles[offset][x] = { type: 'floor', walkable: true };
+            if (tiles[offset][x].ground === 'wall' && this.seededRandom(seed1) < 0.3) {
+                tiles[offset][x].ground = 'floor';
+                tiles[offset][x].type = 'floor';
+                tiles[offset][x].walkable = true;
             }
             const seed2 = chunkSeed + x * 12345 + (chunkSize - offset - 1) * 67890;
-            if (tiles[chunkSize - offset - 1][x].type === 'wall' && this.seededRandom(seed2) < 0.3) {
-                tiles[chunkSize - offset - 1][x] = { type: 'floor', walkable: true };
+            if (tiles[chunkSize - offset - 1][x].ground === 'wall' && this.seededRandom(seed2) < 0.3) {
+                tiles[chunkSize - offset - 1][x].ground = 'floor';
+                tiles[chunkSize - offset - 1][x].type = 'floor';
+                tiles[chunkSize - offset - 1][x].walkable = true;
+            }
+        }
+    }
+
+    /**
+     * Determine wall variations based on neighboring tiles
+     * Updates wall tiles to use horizontal/vertical/corner variations
+     * 
+     * @param {Array<Array<Object>>} tiles - Tile array
+     * @param {number} chunkSize - Chunk size
+     */
+    determineWallVariations(tiles, chunkSize) {
+        for (let y = 0; y < chunkSize; y++) {
+            for (let x = 0; x < chunkSize; x++) {
+                if (tiles[y][x].ground === 'wall') {
+                    // Check neighbors
+                    const hasWallAbove = y > 0 && tiles[y - 1][x].ground === 'wall';
+                    const hasWallBelow = y < chunkSize - 1 && tiles[y + 1][x].ground === 'wall';
+                    const hasWallLeft = x > 0 && tiles[y][x - 1].ground === 'wall';
+                    const hasWallRight = x < chunkSize - 1 && tiles[y][x + 1].ground === 'wall';
+                    
+                    // Determine wall type based on neighbors
+                    // Corner detection
+                    if (!hasWallAbove && !hasWallLeft && (hasWallRight || hasWallBelow)) {
+                        tiles[y][x].ground = 'wall_corner_tl';
+                        tiles[y][x].type = 'wall_corner_tl';
+                    } else if (!hasWallAbove && !hasWallRight && (hasWallLeft || hasWallBelow)) {
+                        tiles[y][x].ground = 'wall_corner_tr';
+                        tiles[y][x].type = 'wall_corner_tr';
+                    } else if (!hasWallBelow && !hasWallLeft && (hasWallRight || hasWallAbove)) {
+                        tiles[y][x].ground = 'wall_corner_bl';
+                        tiles[y][x].type = 'wall_corner_bl';
+                    } else if (!hasWallBelow && !hasWallRight && (hasWallLeft || hasWallAbove)) {
+                        tiles[y][x].ground = 'wall_corner_br';
+                        tiles[y][x].type = 'wall_corner_br';
+                    }
+                    // Vertical walls (stronger vertical connection)
+                    else if ((hasWallAbove || hasWallBelow) && !hasWallLeft && !hasWallRight) {
+                        tiles[y][x].ground = 'wall_vertical';
+                        tiles[y][x].type = 'wall_vertical';
+                    }
+                    // Horizontal walls (stronger horizontal connection)
+                    else if ((hasWallLeft || hasWallRight) && !hasWallAbove && !hasWallBelow) {
+                        tiles[y][x].ground = 'wall_horizontal';
+                        tiles[y][x].type = 'wall_horizontal';
+                    }
+                    // Default to horizontal for complex configurations
+                    else {
+                        tiles[y][x].ground = 'wall_horizontal';
+                        tiles[y][x].type = 'wall_horizontal';
+                    }
+                }
             }
         }
     }

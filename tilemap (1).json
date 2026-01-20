@@ -1,0 +1,66 @@
+{
+    "_margins": {
+        "x": 1,
+        "y": 1
+    },
+    "wall_vertical": {
+        "x": 22,
+        "y": 13
+    },
+    "wall": {
+        "x": 18,
+        "y": 16
+    },
+    "wall_corner_tl": {
+        "x": 23,
+        "y": 12
+    },
+    "wall_corner_tr": {
+        "x": 24,
+        "y": 12
+    },
+    "wall_corner_br": {
+        "x": 24,
+        "y": 13
+    },
+    "wall_corner_bl": {
+        "x": 23,
+        "y": 13
+    },
+    "door": {
+        "x": 32,
+        "y": 3
+    },
+    "door_open": {
+        "x": 32,
+        "y": 4
+    },
+    "stairs": {
+        "x": 20,
+        "y": 18
+    },
+    "stairs_down": {
+        "x": 21,
+        "y": 18
+    },
+    "floor": {
+        "x": 6,
+        "y": 3
+    },
+    "floor2": {
+        "x": 6,
+        "y": 2
+    },
+    "floor3": {
+        "x": 9,
+        "y": 0
+    },
+    "chest": {
+        "x": 24,
+        "y": 0
+    },
+    "player": {
+        "x": 17,
+        "y": 7
+    }
+}

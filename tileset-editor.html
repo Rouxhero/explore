@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tileset Editor - Block Cutting Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #4fc3f7;
+        }
+
+        .controls {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        input[type="number"] {
+            background: #3c3c3c;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        button {
+            background: #4fc3f7;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #29b6f6;
+        }
+
+        button.danger {
+            background: #e57373;
+        }
+
+        button.danger:hover {
+            background: #ef5350;
+        }
+
+        .editor-area {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        .canvas-container {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            overflow: auto;
+            max-height: 800px;
+        }
+
+        #tilesetCanvas {
+            border: 2px solid #555;
+            cursor: crosshair;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .tiles-list {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+
+        .tiles-list h2 {
+            margin-bottom: 15px;
+            color: #4fc3f7;
+            font-size: 18px;
+        }
+
+        .tile-item {
+            background: #3c3c3c;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #4fc3f7;
+        }
+
+        .tile-item.color-red {
+            border-left-color: #ef5350;
+        }
+
+        .tile-item.color-blue {
+            border-left-color: #42a5f5;
+        }
+
+        .tile-item.color-green {
+            border-left-color: #66bb6a;
+        }
+
+        .tile-item.color-purple {
+            border-left-color: #ab47bc;
+        }
+
+        .tile-item.color-orange {
+            border-left-color: #ffa726;
+        }
+
+        .tile-item.color-yellow {
+            border-left-color: #fdd835;
+        }
+
+        .tile-item .tile-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #4fc3f7;
+        }
+
+        .tile-item .tile-coords {
+            font-size: 12px;
+            color: #999;
+            font-family: 'Courier New', monospace;
+        }
+
+        .tile-item button {
+            margin-top: 5px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .tile-item button.edit {
+            background: #ffa726;
+        }
+
+        .tile-item button.edit:hover {
+            background: #fb8c00;
+        }
+
+        .info {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4fc3f7;
+        }
+
+        .info p {
+            margin: 5px 0;
+        }
+
+        .json-output {
+            background: #1e1e1e;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre;
+            color: #a5d6a7;
+        }
+
+        .grid-settings {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .grid-settings .control-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        @media (max-width: 1024px) {
+            .editor-area {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Tileset Editor - Block Cutting Tool</h1>
+        
+        <div class="info">
+            <p><strong>🚀 How to Use:</strong></p>
+            <p>1. Click "📂 Load tilemap.json" to load existing tiles</p>
+            <p>2. Click "Choose File" to load your tileset image (e.g., from tiles/ground/)</p>
+            <p>3. Click tiles on the canvas to select them</p>
+            <p>4. Enter a name and click "➕ Add Tile(s)" (or "Edit" existing tiles)</p>
+            <p>5. Click "💾 Save Changes" to download the updated tilemap.json</p>
+            <p>6. Replace tilemap.json in your game folder and reload!</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Step 1: Load Data & Image</label>
+                <button id="loadGameTilesetBtn" style="margin-top: 5px; margin-bottom: 10px;">📂 Load tilemap.json</button>
+                <input type="file" id="tilesetImage" accept="image/*" style="margin-bottom: 10px;">
+            </div>
+
+            <div class="grid-settings">
+                <div class="control-group">
+                    <label for="tileSize">Tile Size (px):</label>
+                    <input type="number" id="tileSize" value="16" min="8" max="64">
+                </div>
+
+                <div class="control-group">
+                    <label for="marginX">Horizontal Margin (px):</label>
+                    <input type="number" id="marginX" value="0" min="0" max="32">
+                </div>
+
+                <div class="control-group">
+                    <label for="marginY">Vertical Margin (px):</label>
+                    <input type="number" id="marginY" value="0" min="0" max="32">
+                </div>
+
+                <div class="control-group">
+                    <label for="scale">Canvas Scale:</label>
+                    <input type="number" id="scale" value="3" min="1" max="8" step="0.5">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="tileName">Step 2: Tile Name (or base name for bulk):</label>
+                <input type="text" id="tileName" placeholder="e.g., wall_horizontal or ground">
+            </div>
+
+            <div class="control-group">
+                <label for="tileColor">Tile Color/Type:</label>
+                <select id="tileColor" style="width: 100%; max-width: 400px; background: #3c3c3c; border: 1px solid #555; color: #e0e0e0; padding: 8px 12px; border-radius: 4px;">
+                    <option value="default">Default (Gray)</option>
+                    <option value="red">Red</option>
+                    <option value="blue">Blue</option>
+                    <option value="green">Green</option>
+                    <option value="purple">Purple</option>
+                    <option value="orange">Orange</option>
+                    <option value="yellow">Yellow</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <input type="checkbox" id="bulkMode" style="width: auto; margin-right: 5px;">
+                    Bulk Mode (auto-number multiple tiles)
+                </label>
+            </div>
+
+            <div>
+                <button id="addTileBtn">➕ Add Tile(s)</button>
+                <button id="clearSelectionBtn">Clear Selection</button>
+                <button id="saveToFileBtn" style="background: #66bb6a;">💾 Save Changes</button>
+                <button id="clearAllBtn" class="danger">Clear All</button>
+            </div>
+            
+            <div style="margin-top: 10px; color: #999; font-size: 14px;">
+                Selected: <span id="selectionCount">0</span> tile(s)
+            </div>
+        </div>
+
+        <div class="editor-area">
+            <div class="canvas-container">
+                <canvas id="tilesetCanvas"></canvas>
+            </div>
+
+            <div class="tiles-list">
+                <h2>Tile Collection (<span id="tileCount">0</span>)</h2>
+                <div id="tilesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TilesetEditor {
+            constructor() {
+                this.canvas = document.getElementById('tilesetCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.image = null;
+                this.tileSize = 16;
+                this.marginX = 0;
+                this.marginY = 0;
+                this.scale = 3;
+                this.selectedTiles = []; // Changed from selectedTile to array
+                this.tiles = [];
+
+                // Disable image smoothing for pixel art
+                this.ctx.imageSmoothingEnabled = false;
+                this.ctx.webkitImageSmoothingEnabled = false;
+                this.ctx.mozImageSmoothingEnabled = false;
+                this.ctx.msImageSmoothingEnabled = false;
+
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                document.getElementById('tilesetImage').addEventListener('change', (e) => {
+                    this.loadImage(e.target.files[0]);
+                });
+
+                document.getElementById('tileSize').addEventListener('change', (e) => {
+                    this.tileSize = parseInt(e.target.value);
+                    this.redraw();
+                });
+
+                document.getElementById('marginX').addEventListener('change', (e) => {
+                    this.marginX = parseInt(e.target.value);
+                    this.redraw();
+                });
+
+                document.getElementById('marginY').addEventListener('change', (e) => {
+                    this.marginY = parseInt(e.target.value);
+                    this.redraw();
+                });
+
+                document.getElementById('scale').addEventListener('change', (e) => {
+                    this.scale = parseFloat(e.target.value);
+                    this.redraw();
+                });
+
+                this.canvas.addEventListener('click', (e) => {
+                    this.handleCanvasClick(e);
+                });
+
+                document.getElementById('addTileBtn').addEventListener('click', () => {
+                    this.addTile();
+                });
+
+                document.getElementById('clearSelectionBtn').addEventListener('click', () => {
+                    this.selectedTiles = [];
+                    this.updateSelectionCount();
+                    this.redraw();
+                });
+
+                document.getElementById('clearAllBtn').addEventListener('click', () => {
+                    if (confirm('Are you sure you want to clear all tiles?')) {
+                        this.tiles = [];
+                        this.updateTilesList();
+                    }
+                });
+
+                document.getElementById('tileName').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.addTile();
+                    }
+                });
+
+                document.getElementById('saveToFileBtn').addEventListener('click', () => {
+                    this.saveToFile();
+                });
+
+                document.getElementById('loadGameTilesetBtn').addEventListener('click', () => {
+                    this.loadFromGameTileset();
+                });
+            }
+
+            updateSelectionCount() {
+                document.getElementById('selectionCount').textContent = this.selectedTiles.length;
+            }
+
+            loadImage(file) {
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.image = new Image();
+                    this.image.onload = () => {
+                        this.redraw();
+                    };
+                    this.image.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            redraw() {
+                if (!this.image) return;
+
+                // Set canvas size based on image and scale
+                this.canvas.width = this.image.width * this.scale;
+                this.canvas.height = this.image.height * this.scale;
+
+                // Draw image scaled
+                this.ctx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw grid
+                this.drawGrid();
+
+                // Draw selected tiles highlight
+                this.selectedTiles.forEach(tile => {
+                    this.drawSelection(tile.x, tile.y);
+                });
+
+                // Draw existing tiles
+                this.drawExistingTiles();
+            }
+
+            drawGrid() {
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                this.ctx.lineWidth = 1;
+
+                const cellWidth = (this.tileSize + this.marginX) * this.scale;
+                const cellHeight = (this.tileSize + this.marginY) * this.scale;
+
+                // Vertical lines
+                for (let x = 0; x <= this.canvas.width; x += cellWidth) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                }
+
+                // Horizontal lines
+                for (let y = 0; y <= this.canvas.height; y += cellHeight) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                }
+            }
+
+            drawSelection(tileX, tileY) {
+                const scaledTileSize = this.tileSize * this.scale;
+                const scaledMarginX = this.marginX * this.scale;
+                const scaledMarginY = this.marginY * this.scale;
+                
+                const x = tileX * (scaledTileSize + scaledMarginX);
+                const y = tileY * (scaledTileSize + scaledMarginY);
+
+                // Draw highlight box
+                this.ctx.strokeStyle = '#4fc3f7';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(x, y, scaledTileSize, scaledTileSize);
+
+                // Draw semi-transparent overlay
+                this.ctx.fillStyle = 'rgba(79, 195, 247, 0.2)';
+                this.ctx.fillRect(x, y, scaledTileSize, scaledTileSize);
+            }
+
+            drawExistingTiles() {
+                const scaledTileSize = this.tileSize * this.scale;
+                const scaledMarginX = this.marginX * this.scale;
+                const scaledMarginY = this.marginY * this.scale;
+
+                this.tiles.forEach((tile) => {
+                    const x = tile.x * (scaledTileSize + scaledMarginX);
+                    const y = tile.y * (scaledTileSize + scaledMarginY);
+
+                    // Draw green border for saved tiles
+                    this.ctx.strokeStyle = '#81c784';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(x, y, scaledTileSize, scaledTileSize);
+                });
+            }
+
+            handleCanvasClick(e) {
+                if (!this.image) return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const scaledTileSize = this.tileSize * this.scale;
+                const scaledMarginX = this.marginX * this.scale;
+                const scaledMarginY = this.marginY * this.scale;
+                const cellWidth = scaledTileSize + scaledMarginX;
+                const cellHeight = scaledTileSize + scaledMarginY;
+
+                const tileX = Math.floor(x / cellWidth);
+                const tileY = Math.floor(y / cellHeight);
+
+                const clickedTile = { x: tileX, y: tileY };
+
+                // Check if tile is already selected
+                const existingIndex = this.selectedTiles.findIndex(
+                    t => t.x === tileX && t.y === tileY
+                );
+
+                if (existingIndex !== -1) {
+                    // Deselect if already selected
+                    this.selectedTiles.splice(existingIndex, 1);
+                } else {
+                    // Add to selection
+                    this.selectedTiles.push(clickedTile);
+                }
+
+                this.updateSelectionCount();
+                this.redraw();
+
+                // Auto-suggest name based on selection count
+                const nameInput = document.getElementById('tileName');
+                if (!nameInput.value && this.selectedTiles.length === 1) {
+                    const suggestedName = `tile_${tileX}_${tileY}`;
+                    nameInput.value = suggestedName;
+                }
+            }
+
+            addTile() {
+                if (this.selectedTiles.length === 0) {
+                    alert('Please select at least one tile by clicking on the tileset.');
+                    return;
+                }
+
+                const nameInput = document.getElementById('tileName');
+                const baseName = nameInput.value.trim();
+                const tileColor = document.getElementById('tileColor').value;
+
+                if (!baseName) {
+                    alert('Please enter a name for the tile(s).');
+                    return;
+                }
+
+                const bulkMode = document.getElementById('bulkMode').checked;
+
+                if (bulkMode && this.selectedTiles.length > 1) {
+                    // Bulk mode: create numbered tiles
+                    let addedCount = 0;
+                    this.selectedTiles.forEach((tile, index) => {
+                        const name = `${baseName}${index + 1}`;
+                        
+                        // Check if name already exists
+                        if (this.tiles.some(t => t.name === name)) {
+                            // Skip or replace based on user preference
+                            this.tiles = this.tiles.filter(t => t.name !== name);
+                        }
+
+                        this.tiles.push({
+                            name: name,
+                            x: tile.x,
+                            y: tile.y,
+                            color: tileColor
+                        });
+                        addedCount++;
+                    });
+
+                    alert(`Added ${addedCount} tiles: ${baseName}1 to ${baseName}${addedCount}`);
+                } else if (this.selectedTiles.length === 1) {
+                    // Single tile mode
+                    const tile = this.selectedTiles[0];
+                    
+                    if (this.tiles.some(t => t.name === baseName)) {
+                        if (!confirm(`Tile "${baseName}" already exists. Replace it?`)) {
+                            return;
+                        }
+                        this.tiles = this.tiles.filter(t => t.name !== baseName);
+                    }
+
+                    this.tiles.push({
+                        name: baseName,
+                        x: tile.x,
+                        y: tile.y,
+                        color: tileColor
+                    });
+                } else {
+                    // Multiple tiles selected but bulk mode not enabled
+                    if (!confirm(`You have ${this.selectedTiles.length} tiles selected. Enable "Bulk Mode" to add them all, or click OK to add only the first tile as "${baseName}".`)) {
+                        return;
+                    }
+                    
+                    const tile = this.selectedTiles[0];
+                    if (this.tiles.some(t => t.name === baseName)) {
+                        this.tiles = this.tiles.filter(t => t.name !== baseName);
+                    }
+                    this.tiles.push({
+                        name: baseName,
+                        x: tile.x,
+                        y: tile.y,
+                        color: tileColor
+                    });
+                }
+
+                // Clear input and selection
+                nameInput.value = '';
+                this.selectedTiles = [];
+                this.updateSelectionCount();
+
+                this.updateTilesList();
+                this.redraw();
+            }
+
+            updateTilesList() {
+                const listContainer = document.getElementById('tilesList');
+                const countElement = document.getElementById('tileCount');
+
+                countElement.textContent = this.tiles.length;
+
+                if (this.tiles.length === 0) {
+                    listContainer.innerHTML = '<p style="color: #999; text-align: center;">No tiles added yet</p>';
+                    return;
+                }
+
+                listContainer.innerHTML = this.tiles.map((tile, index) => {
+                    const colorClass = tile.color ? `color-${tile.color}` : 'color-default';
+                    return `
+                    <div class="tile-item ${colorClass}">
+                        <div class="tile-name">${tile.name}</div>
+                        <div class="tile-coords">x: ${tile.x}, y: ${tile.y} ${tile.color ? `[${tile.color}]` : ''}</div>
+                        <button class="edit" onclick="editor.editTile(${index})">Edit</button>
+                        <button onclick="editor.removeTile(${index})">Remove</button>
+                    </div>
+                `;
+                }).join('');
+            }
+
+            editTile(index) {
+                const tile = this.tiles[index];
+                document.getElementById('tileColor').value = tile.color || 'default';
+                
+                // Set the tile name in input
+                document.getElementById('tileName').value = tile.name;
+                
+                // Select the tile on canvas
+                this.selectedTiles = [{ x: tile.x, y: tile.y }];
+                this.updateSelectionCount();
+                this.redraw();
+                
+                // Scroll to top to see the controls
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                // Remove the tile from list (will be re-added when user clicks Add)
+                this.tiles.splice(index, 1);
+                this.updateTilesList();
+            }
+
+            removeTile(index) {
+                this.tiles.splice(index, 1);
+                this.updateTilesList();
+                this.redraw();
+            }
+
+            async loadFromGameTileset() {
+                try {
+                    // Try to fetch the tilemap.json file first
+                    const response = await fetch('tilemap.json');
+                    
+                    if (response.ok) {
+                        const tileMap = await response.json();
+                        
+                        // Convert to tiles array
+                        this.tiles = Object.entries(tileMap).map(([name, coords]) => ({
+                            name: name,
+                            x: coords.x,
+                            y: coords.y
+                        }));
+
+                        this.updateTilesList();
+                        this.redraw();
+                        
+                        alert(`Loaded ${this.tiles.length} tiles from tilemap.json!`);
+                        return;
+                    }
+                } catch (error) {
+                    console.log('tilemap.json not found, trying tileset.js...');
+                }
+
+                // Fallback: try to load from tileset.js
+                try {
+                    const response = await fetch('src/world/tileset.js');
+                    const content = await response.text();
+                    
+                    const tileMapMatch = content.match(/this\.tileMap\s*=\s*({[\s\S]*?});/);
+                    
+                    if (!tileMapMatch) {
+                        alert('Could not find tilemap data');
+                        return;
+                    }
+
+                    const tileMapStr = tileMapMatch[1]
+                        .replace(/\/\/.*$/gm, '')
+                        .replace(/'/g, '"')
+                        .replace(/(\w+):/g, '"$1":');
+
+                    const tileMap = JSON.parse(tileMapStr);
+                    
+                    this.tiles = Object.entries(tileMap).map(([name, coords]) => ({
+                        name: name,
+                        x: coords.x,
+                        y: coords.y
+                    }));
+
+                    this.updateTilesList();
+                    this.redraw();
+                } catch (error) {
+                    console.error('Error loading tileset:', error);
+                    alert('❌ Could not load tilemap.json\n\nMake sure:\n1. The server is running (double-click start-editor.bat)\n2. tilemap.json exists in the root folder\n3. You\'re accessing via http://localhost:8000/tileset-editor.html');
+                }
+            }
+
+            async saveToFile() {
+                if (this.tiles.length === 0) {
+                    alert('No tiles to save. Add some tiles first.');
+                    return;
+                }const entry = { x: tile.x, y: tile.y };
+                    if (tile.color && tile.color !== 'default') {
+                        entry.color = tile.color;
+                    }
+                    tileMap[tile.name] = entry
+
+                const tileMap = {};
+                this.tiles.forEach(tile => {
+                    tileMap[tile.name] = { x: tile.x, y: tile.y };
+                });
+
+                const json = JSON.stringify(tileMap, null, 4);
+
+                // Download the file
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'tilemap.json';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                alert('✅ Downloaded tilemap.json!\n\nReplace the file in your game folder and reload the game.');
+            }
+        }
+
+        // Initialize editor
+        const editor = new TilesetEditor();
+    </script>
+</body>
+</html>
+</body>
+</html>
