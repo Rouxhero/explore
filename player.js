@@ -97,8 +97,9 @@ class Player {
         }
 
         // Apply movement with collision detection
-        const moveX = this.velocity.x * this.speed * deltaTime;
-        const moveY = this.velocity.y * this.speed * deltaTime;
+        // deltaTime is in milliseconds, convert to seconds
+        const moveX = this.velocity.x * this.speed * (deltaTime / 16.67);
+        const moveY = this.velocity.y * this.speed * (deltaTime / 16.67);
 
         // Check X collision
         if (this.canMoveTo(this.x + moveX, this.y)) {

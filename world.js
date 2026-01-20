@@ -82,7 +82,7 @@ class World {
 
     // Ensure there are pathways through the chunk
     ensurePathways(chunk) {
-        // Clear horizontal middle path
+        // Clear horizontal middle path (only replace walls)
         const midY = Math.floor(this.chunkSize / 2);
         for (let x = 1; x < this.chunkSize - 1; x++) {
             if (chunk.tiles[midY][x].type === 'wall') {
@@ -91,7 +91,7 @@ class World {
             }
         }
 
-        // Clear vertical middle path
+        // Clear vertical middle path (only replace walls)
         const midX = Math.floor(this.chunkSize / 2);
         for (let y = 1; y < this.chunkSize - 1; y++) {
             if (chunk.tiles[y][midX].type === 'wall') {
@@ -105,8 +105,9 @@ class World {
     getTileAt(worldX, worldY) {
         const chunkX = Math.floor(worldX / this.chunkSize);
         const chunkY = Math.floor(worldY / this.chunkSize);
-        const localX = worldX - chunkX * this.chunkSize;
-        const localY = worldY - chunkY * this.chunkSize;
+        // Handle negative coordinates correctly
+        const localX = ((worldX % this.chunkSize) + this.chunkSize) % this.chunkSize;
+        const localY = ((worldY % this.chunkSize) + this.chunkSize) % this.chunkSize;
 
         const chunk = this.getChunk(chunkX, chunkY);
         
@@ -147,11 +148,13 @@ class World {
 
     // World to chunk coordinates
     worldToChunk(worldX, worldY) {
+        const chunkX = Math.floor(worldX / this.chunkSize);
+        const chunkY = Math.floor(worldY / this.chunkSize);
         return {
-            chunkX: Math.floor(worldX / this.chunkSize),
-            chunkY: Math.floor(worldY / this.chunkSize),
-            localX: worldX - Math.floor(worldX / this.chunkSize) * this.chunkSize,
-            localY: worldY - Math.floor(worldY / this.chunkSize) * this.chunkSize
+            chunkX: chunkX,
+            chunkY: chunkY,
+            localX: ((worldX % this.chunkSize) + this.chunkSize) % this.chunkSize,
+            localY: ((worldY % this.chunkSize) + this.chunkSize) % this.chunkSize
         };
     }
 }
