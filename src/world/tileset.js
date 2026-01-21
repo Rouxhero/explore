@@ -4,7 +4,7 @@
  * Extracts individual tiles for rendering
  */
 class Tileset {
-    constructor(imagePath, tileSize = 16, tileMapPath = '../tilemap.json') {
+    constructor(imagePath, tileSize = 16, tileMapPath = 'tilemap.json') {
         this.imagePath = imagePath;
         this.tileSize = tileSize;
         this.tileMapPath = tileMapPath;
