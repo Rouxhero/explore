@@ -6,6 +6,7 @@ class Game {
     constructor() {
         // Get canvas
         this.canvas = document.getElementById('game-canvas');
+        let randomSeed = parseInt(document.getElementById('seed').textContent);
         if (!this.canvas) {
             console.error('Canvas element not found!');
             return;
@@ -17,7 +18,7 @@ class Game {
 
         // Game configuration
         this.config = {
-            seed: 12345,
+            seed: randomSeed,
             tileSize: 16,
             chunkSize: 16
         };

@@ -13,7 +13,7 @@
             <div>Controls: WASD or Arrow Keys to move</div>
             <div>Position: <span id="position">0, 0</span></div>
             <div>Chunk: <span id="chunk">0, 0</span></div>
-            <div>Seed: <span id="seed">12345</span></div>
+            <div>Seed: <span id="seed"></span></div>
         </div>
     </div>
 
@@ -22,6 +22,11 @@
         <div id="joystick-base"></div>
         <div id="joystick-stick"></div>
     </div>
+    <script>
+        // Show seed in info panel
+        let randomSeed = Math.floor(Math.random() * 10000000);
+        document.getElementById('seed').textContent = randomSeed;
+    </script>
     <!-- Engine systems -->
     <script src="src/engine/input.js"></script>
     <script src="src/engine/camera.js"></script>
